@@ -13,6 +13,8 @@ ROW_MAX = 100
 COLUMN_MAX = 100
 WINDOW_WIDTH = ROW_MAX*WIDTH
 WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
+BLACK = (255,255,255)
+WHITE = (0,0,0)
 
 class Cell(pygame.Rect):
     def __init__(self, left, top, width, height, position, alive):
@@ -20,28 +22,20 @@ class Cell(pygame.Rect):
         self.alive = alive
         assert 0<=self.alive<=1, 'Possible values for Alive status are only 0 or 1'
         self.position = position
+        self.setColor()
 
     def setAlive(self, alive):
         self.alive = alive
+        self.setColor()
+
+    def setColor(self):
+        if self.alive == 0:
+            self.color = BLACK
+        else:
+            self.color = WHITE
 
     def __str__(self):
         return str('alive: ' + str(self.alive) + ' position ' + str(self.position))
-
-
-def printList(name, tmp_list):
-    list_value = ''
-    for cell in tmp_list:
-        list_value += str(cell)
-    print name, list_value
-
-
-def generateNewCells(tmp_list, top):
-    new_cell_list = []
-    [new_cell_list.append(Cell(LEFT + i * WIDTH, TOP+top*HEIGHT, WIDTH, HEIGHT, i, LENGTH, 0)) for i in range(0, LENGTH)]
-    new_cell_list[0].alive = tmp_list[0].alive
-    [new_cell_list[i].setAlive(cell_rule[str(tmp_list[i - 1].alive) + str(tmp_list[i].alive) + str(tmp_list[i + 1].alive)]) for i in range(1, len(new_cell_list) - 1)]
-    new_cell_list[-1].alive = tmp_list[-1].alive
-    return new_cell_list
 
 
 def createInitialMap(cell_map):
@@ -50,6 +44,7 @@ def createInitialMap(cell_map):
         for j in range(0, COLUMN_MAX):
             column_list.append(Cell(LEFT + i * WIDTH, TOP + j * HEIGHT, WIDTH, HEIGHT, (i,j), 0))
         cell_map.append(column_list)
+
 
 def updateCellMap(cell_map):
     change_dict = {}
@@ -71,6 +66,7 @@ def updateCellMap(cell_map):
     for i in range(0,ROW_MAX):
         for j in range(0,COLUMN_MAX):
             cell_map[i][j].setAlive(change_dict[i,j])
+
 
 def defineStartingFigure(cell_map):
 
@@ -96,11 +92,7 @@ while True:
          if event.type == USEREVENT + 1:
             for one_row in cell_map:
                 for one_cell in one_row:
-                    if one_cell.alive == 0:
-                        color = (255,255,255)
-                    else:
-                        color = (0,0,0)
-                    pygame.draw.rect(windowSurface,color,one_cell,0)
+                    pygame.draw.rect(windowSurface,one_cell.color,one_cell,0)
             pygame.display.update()
             updateCellMap(cell_map)
 
