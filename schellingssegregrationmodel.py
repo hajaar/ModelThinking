@@ -8,10 +8,10 @@ import random
 
 LEFT = 0
 TOP = 0
-WIDTH = 5
-HEIGHT = 5
-ROW_MAX = 50
-COLUMN_MAX = 50
+WIDTH = 2
+HEIGHT = 2
+ROW_MAX = 200
+COLUMN_MAX = 200
 WINDOW_WIDTH = ROW_MAX*WIDTH
 WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
 WHITE = (255,255,255)
@@ -19,7 +19,7 @@ BLACK = (0,0,0)
 RED = (255,0,0)
 BLUE = (0,0,255)
 GREEN = (0,255,0)
-MINIMUM_HAPPINESS = 0.05
+MINIMUM_HAPPINESS = 0.5
 OVERALL_HAPPINESS = 70
 OCCUPANCY = 0.7
 
@@ -76,20 +76,21 @@ class Cell(pygame.Rect):
 
 
     def lookForNewLocation(self):
-        max_happiness = 0
+        max_happiness = True
         max_pos = []
         for cell_pos in unoccupied_cells:
             another_cell = cell_map[cell_pos[0]][cell_pos[1]]
             potential_happiness = another_cell.calculatePotentialHappiness(self.society_group)
             if potential_happiness >= MINIMUM_HAPPINESS:
                 self.switchCells(another_cell)
-                return 1
-            if potential_happiness > max_happiness and potential_happiness > self.happiness:
-                max_happiness = potential_happiness
+                return another_cell.position
+            if potential_happiness > self.happiness and max_happiness == True:
                 max_pos = (cell_pos[0], cell_pos[1])
-        if max_happiness != 0:
+                max_happiness = False
+        if max_happiness == False:
             self.switchCells(cell_map[max_pos[0]][max_pos[1]])
-            return 1
+            return max_pos
+
 
 
     def switchCells(self,another_cell):
@@ -113,6 +114,10 @@ class Cell(pygame.Rect):
         occupied_cells.remove((i1, j1))
         unoccupied_cells.add((i1, j1))
         unoccupied_cells.remove((i2, j2))
+        for cell_pos in self.neighbours:
+            cell_map[cell_pos[0]][cell_pos[1]].calculateMyHappiness()
+        for cell_pos in cell_map[i2][j2].neighbours:
+            cell_map[cell_pos[0]][cell_pos[1]].calculateMyHappiness()
         return 1
 
 
@@ -144,7 +149,7 @@ def createInitialMap(cell_map):
             else:
                 unoccupied_cells.add((i,j))
                 count3 += 1
-                unique_id = 'NO' +str(count3)
+                unique_id = 'N' +str(count3)
             new_cell = Cell(LEFT + i * WIDTH, TOP + j * HEIGHT, WIDTH, HEIGHT, (i,j), society_group, occupied, unique_id)
             column_list.append(new_cell)
         cell_map.append(column_list)
@@ -166,13 +171,22 @@ def calculateOverallHappiness(cell_map):
 
 
 def startMigration(cell_map):
-    print 'Starting Migration'
-    for cell_pos in occupied_cells:
-        one_cell = cell_map[cell_pos[0]][cell_pos[1]]
-#        print 'Looking at cell ', str(one_cell)
-        if one_cell.happiness < MINIMUM_HAPPINESS:
-            one_cell.lookForNewLocation()
+    pass
 
+def countByType():
+    sum_unoccupied = 0
+    sum_red = 0
+    sum_blue = 0
+    for one_row in cell_map:
+        for one_cell in one_row:
+            if one_cell.occupied == 0:
+                sum_unoccupied += 1
+            if one_cell.occupied == 1:
+                if one_cell.color == RED:
+                    sum_red += 1
+                if one_cell.color == BLUE:
+                    sum_blue += 1
+    print sum_unoccupied, sum_red, sum_blue
 
 pygame.init()
 pygame.time.set_timer(USEREVENT+1,100)
@@ -184,26 +198,34 @@ occupied_cells = set([])
 createInitialMap(cell_map)
 windowSurface.fill(GREEN)
 iteration = 0
+for one_row in cell_map:
+    for one_cell in one_row:
+        pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
+#        text = basicFont.render(str(one_cell.unique_id), True, BLACK)
+#        windowSurface.blit(text, one_cell)
+pygame.display.update()
+countByType()
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-        print 'Re-painting Canvas'
-        for one_row in cell_map:
-            for one_cell in one_row:
-                pygame.draw.rect(windowSurface,one_cell.color,one_cell,0)
-                if one_cell.happiness < MINIMUM_HAPPINESS:
-                    is_everyone_happy = False
-                #text = basicFont.render(str(one_cell.unique_id), True, BLACK)
-                #windowSurface.blit(text,one_cell)
-        pygame.display.update()
+        for cell_pos in occupied_cells:
+            one_cell = cell_map[cell_pos[0]][cell_pos[1]]
+#            print 'Looking at cell ', str(one_cell)
+            if one_cell.happiness < MINIMUM_HAPPINESS:
+                another_cell_pos = one_cell.lookForNewLocation()
+                pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
+#                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
+#                windowSurface.blit(text, one_cell)
+                if another_cell_pos != None:
+                    another_cell = cell_map[another_cell_pos[0]][another_cell_pos[1]]
+                    pygame.draw.rect(windowSurface, another_cell.color, another_cell, 0)
+#                    text = basicFont.render(str(another_cell.unique_id), True, BLACK)
+#                    windowSurface.blit(text, another_cell)
+                pygame.display.update()
+#        countByType()
         happiness_percentile = calculateOverallHappiness(cell_map)
-        if is_everyone_happy == False and happiness_percentile < OVERALL_HAPPINESS:
-            startMigration(cell_map)
-        else:
-            print 'All happy'
-            break
         print ' iteration ', iteration, '% happy ', calculateOverallHappiness(cell_map)
         iteration += 1
 
