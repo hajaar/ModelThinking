@@ -45,8 +45,10 @@ class Cell(pygame.Rect):
         if self.occupied == 1:
             if self.society_group == 0:
                 self.color = RED
-            else:
+            elif self.society_group == 1:
                 self.color = BLUE
+            else:
+                self.color = YELLOW
 
 
     def setNeighbours(self):
@@ -132,6 +134,7 @@ def createInitialMap(cell_map):
     count1 = 0
     count2 = 0
     count3 = 0
+    count4 = 0
     for i in range(0, ROW_MAX):
         column_list = []
         for j in range(0, COLUMN_MAX):
@@ -139,7 +142,7 @@ def createInitialMap(cell_map):
             occupied = 1
             if rate>OCCUPANCY*10:
                 occupied = 0
-            society_group = random.randrange(0,2)
+            society_group = random.randrange(0,3)
             if occupied == 1:
                 if society_group == 0:
                     count1 += 1
@@ -147,6 +150,8 @@ def createInitialMap(cell_map):
                 if society_group == 1:
                     count2 += 1
                     unique_id = 'B'+str(count2)
+                if society_group == 2:
+                    count4 == 'Y'+str(count4)
                 occupied_cells.add((i,j))
             else:
                 unoccupied_cells.add((i,j))
