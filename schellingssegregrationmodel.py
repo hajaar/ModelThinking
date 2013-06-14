@@ -5,13 +5,14 @@ import pygame
 from pygame.locals import  *
 import sys
 import random
+import math
 
 LEFT = 0
 TOP = 0
-WIDTH = 2
-HEIGHT = 2
-ROW_MAX = 200
-COLUMN_MAX = 200
+WIDTH = 10
+HEIGHT = 10
+ROW_MAX = 50
+COLUMN_MAX = 50
 WINDOW_WIDTH = ROW_MAX*WIDTH
 WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
 WHITE = (255,255,255)
@@ -19,9 +20,10 @@ BLACK = (0,0,0)
 RED = (255,0,0)
 BLUE = (0,0,255)
 GREEN = (0,255,0)
+YELLOW = (255,255,0)
 MINIMUM_HAPPINESS = 0.5
 OVERALL_HAPPINESS = 70
-OCCUPANCY = 0.7
+OCCUPANCY = 0.75
 
 
 class Cell(pygame.Rect):
@@ -162,11 +164,10 @@ def createInitialMap(cell_map):
 def calculateOverallHappiness(cell_map):
     count = 0
     count2 = 0
-    for i in range(0, ROW_MAX):
-        for j in range(0, COLUMN_MAX):
-            count += 1
-            if cell_map[i][j].happiness >= MINIMUM_HAPPINESS:
-                count2 += 1
+    for cell_pos in occupied_cells:
+        count += 1
+        if cell_map[cell_pos[0]][cell_pos[1]].happiness >= MINIMUM_HAPPINESS:
+            count2 += 1
     return count2*100/float(count)
 
 
@@ -196,7 +197,9 @@ cell_map = []
 unoccupied_cells = set([])
 occupied_cells = set([])
 createInitialMap(cell_map)
-windowSurface.fill(GREEN)
+windowSurface.fill(BLACK)
+happiness_percentile = calculateOverallHappiness(cell_map)
+happiness_percentile_new = happiness_percentile + 1
 iteration = 0
 for one_row in cell_map:
     for one_cell in one_row:
@@ -210,22 +213,29 @@ while True:
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-        for cell_pos in occupied_cells:
-            one_cell = cell_map[cell_pos[0]][cell_pos[1]]
-#            print 'Looking at cell ', str(one_cell)
-            if one_cell.happiness < MINIMUM_HAPPINESS:
-                another_cell_pos = one_cell.lookForNewLocation()
-                pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
-#                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
-#                windowSurface.blit(text, one_cell)
-                if another_cell_pos != None:
-                    another_cell = cell_map[another_cell_pos[0]][another_cell_pos[1]]
-                    pygame.draw.rect(windowSurface, another_cell.color, another_cell, 0)
-#                    text = basicFont.render(str(another_cell.unique_id), True, BLACK)
-#                    windowSurface.blit(text, another_cell)
-                pygame.display.update()
-#        countByType()
-        happiness_percentile = calculateOverallHappiness(cell_map)
-        print ' iteration ', iteration, '% happy ', calculateOverallHappiness(cell_map)
-        iteration += 1
+        if math.fabs(happiness_percentile_new - happiness_percentile) > 0.01:
+            happiness_percentile = calculateOverallHappiness(cell_map)
+            for cell_pos in occupied_cells:
+                one_cell = cell_map[cell_pos[0]][cell_pos[1]]
+    #            print 'Looking at cell ', str(one_cell)
+                if one_cell.happiness < MINIMUM_HAPPINESS:
+                    another_cell_pos = one_cell.lookForNewLocation()
+                    pygame.draw.rect(windowSurface, GREEN, one_cell, 0)
+    #                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
+    #                windowSurface.blit(text, one_cell)
+                    if another_cell_pos != None:
+                        another_cell = cell_map[another_cell_pos[0]][another_cell_pos[1]]
+                        pygame.draw.rect(windowSurface, GREEN, another_cell, 0)
+    #                    text = basicFont.render(str(another_cell.unique_id), True, BLACK)
+    #                    windowSurface.blit(text, another_cell)
+                        pygame.display.update()
+                        pygame.time.delay(100)
+                        pygame.draw.rect(windowSurface, another_cell.color, another_cell, 0)
+                    pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
+                    pygame.display.update()
+    #        countByType()
+            happiness_percentile_new = calculateOverallHappiness(cell_map)
+            print ' iteration ', iteration, '% happy ', calculateOverallHappiness(cell_map)
+            iteration += 1
+
 
