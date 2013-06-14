@@ -8,8 +8,8 @@ import random
 
 LEFT = 0
 TOP = 0
-WIDTH = 5
-HEIGHT = 5
+WIDTH = 10
+HEIGHT = 10
 ROW_MAX = 50
 COLUMN_MAX = 50
 WINDOW_WIDTH = ROW_MAX*WIDTH
@@ -19,7 +19,7 @@ BLACK = (0,0,0)
 RED = (255,0,0)
 BLUE = (0,0,255)
 GREEN = (0,255,0)
-MINIMUM_HAPPINESS = 0.25
+MINIMUM_HAPPINESS = 0.5
 OVERALL_HAPPINESS = 0.8
 OCCUPANCY = 0.7
 
@@ -31,8 +31,10 @@ class Cell(pygame.Rect):
         self.society_group = society_group
         self.occupied = occupied
         self.unique_id = unique_id
-        self.setHappiness()
+        self.happiness = 0
+        self.neighbours = set([])
         self.setColor()
+        self.setNeighbours()
 
 
     def setColor(self):
@@ -44,8 +46,33 @@ class Cell(pygame.Rect):
             else:
                 self.color = BLUE
 
-    def setHappiness(self):
+
+    def setNeighbours(self):
+        i = self.position[0]
+        j = self.position[1]
+        for x in range(i - 1, i + 2):
+            if 0 <= x < ROW_MAX:
+                for y in range(j - 1, j + 2):
+                    if 0 <= y < COLUMN_MAX:
+                        if x != i or y != j:
+                            self.neighbours.add((x,y))
+
+
+    def calculateMyHappiness(self):
         self.happiness = 0
+        if self.occupied == 1:
+            self.happiness = self.calculatePotentialHappiness(self.society_group)
+
+
+
+    def calculatePotentialHappiness(self,society_group):
+        sum = 0
+        for cell_pos in self.neighbours:
+            if cell_map[cell_pos[0]][cell_pos[1]].occupied == 1 and cell_map[cell_pos[0]][
+                cell_pos[1]].society_group == society_group:
+                sum += 1
+        happiness = sum / float(len(self.neighbours))
+        return happiness
 
 
     def __str__(self):
@@ -55,12 +82,13 @@ class Cell(pygame.Rect):
 def createInitialMap(cell_map):
     count1 = 0
     count2 = 0
+    count3 = 0
     for i in range(0, ROW_MAX):
         column_list = []
         for j in range(0, COLUMN_MAX):
             rate = random.randrange(1,11)
-            occupied = 0
-            if 1<=rate<=OCCUPANCY*10:
+            occupied = 1
+            if rate>OCCUPANCY*10:
                 occupied = 1
             society_group = random.randrange(0,2)
             if occupied == 1:
@@ -71,44 +99,13 @@ def createInitialMap(cell_map):
                     count2 += 1
                     unique_id = 'B'+str(count2)
             else:
-                unique_id = 'NO'
+                count3 += 1
+                unique_id = 'NO' +str(count3)
             new_cell = Cell(LEFT + i * WIDTH, TOP + j * HEIGHT, WIDTH, HEIGHT, (i,j), society_group, occupied, unique_id)
             column_list.append(new_cell)
         cell_map.append(column_list)
-    updateHappinessAll(cell_map)
+    [cell_map[i][j].calculateMyHappiness() for i in range(0,ROW_MAX) for j in range(0,COLUMN_MAX )]
     calculateOverallHappiness(cell_map)
-
-
-
-def updateHappinessAll(cell_map):
-    for i in range(0, ROW_MAX):
-        for j in range(0, COLUMN_MAX):
-            cell_map[i][j].happiness = calculateHappinessForOneCell(cell_map[i][j],cell_map[i][j])
-
-
-def calculateHappinessForOneCell(one_cell, another_cell):
-    if one_cell.occupied == 1:
-        i = another_cell.position[0]
-        j = another_cell.position[1]
-        sum = 0
-        count = 0
-        for x in range(i - 1, i + 2):
-            if 0 <= x < ROW_MAX:
-                for y in range(j - 1, j + 2):
-                    if 0 <= y < COLUMN_MAX:
-                        if x != i or y != j:
-                            if cell_map[x][y].occupied == 1:
-                                if cell_map[x][y].society_group == one_cell.society_group:
-                                    sum += 1
-                            count += 1
-        if count != 0:
-            happiness = sum/float(count)
-        else:
-            happiness = 0
-        return happiness
-    else:
-        happiness = 0
-        return happiness
 
 
 def calculateOverallHappiness(cell_map):
@@ -116,8 +113,8 @@ def calculateOverallHappiness(cell_map):
     count = 0
     for i in range(0, ROW_MAX):
         for j in range(0, COLUMN_MAX):
-                sum += cell_map[i][j].happiness
-                count += 1
+            sum += cell_map[i][j].happiness
+            count += 1
     return sum/float(count)
 
 
@@ -136,18 +133,17 @@ def findFirstAvailableCell(one_cell):
         for n in range(0,COLUMN_MAX):
             another_cell = cell_map[m][n]
             if another_cell.occupied == 0:
-                potential_happiness = calculateHappinessForOneCell(one_cell,another_cell)
+                potential_happiness = another_cell.calculatePotentialHappiness(one_cell.society_group)
                 if potential_happiness >= MINIMUM_HAPPINESS:
                     return another_cell
     for m in range(0, ROW_MAX):
         for n in range(0, COLUMN_MAX):
             another_cell = cell_map[m][n]
             if another_cell.occupied == 0:
-                potential_happiness = calculateHappinessForOneCell(one_cell, another_cell)
+                potential_happiness = another_cell.calculatePotentialHappiness(one_cell.society_group)
                 if potential_happiness > one_cell.happiness:
                     return another_cell
     return one_cell
-
 
 
 def migrateOneCell(one_cell, first_available_cell):
@@ -161,12 +157,12 @@ def migrateOneCell(one_cell, first_available_cell):
     cell_map[i2][j2].unique_id = one_cell.unique_id
     cell_map[i2][j2].occupied = 1
     cell_map[i2][j2].setColor()
-    cell_map[i2][j2].happiness = calculateHappinessForOneCell(cell_map[i2][j2],cell_map[i2][j2])
+    cell_map[i2][j2].calculateMyHappiness()
     cell_map[i1][j1].society_group = tmp_sg
     cell_map[i1][j1].unique_id = tmp_id
     cell_map[i1][j1].occupied = 0
     cell_map[i1][j1].setColor()
-    cell_map[i1][j1].happiness = calculateHappinessForOneCell(cell_map[i1][j1],cell_map[i1][j1])
+    cell_map[i1][j1].calculateMyHappiness()
 
 
 pygame.init()
