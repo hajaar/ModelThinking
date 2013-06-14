@@ -8,17 +8,18 @@ import random
 
 LEFT = 0
 TOP = 0
-WIDTH = 25
-HEIGHT = 25
-ROW_MAX = 20
-COLUMN_MAX = 20
+WIDTH = 50
+HEIGHT = 50
+ROW_MAX = 10
+COLUMN_MAX = 10
 WINDOW_WIDTH = ROW_MAX*WIDTH
 WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 RED = (255,0,0)
 BLUE = (0,0,255)
-MINIMUM_HAPPINESS = 1
+GREEN = (0,255,0)
+MINIMUM_HAPPINESS = 0.25
 OVERALL_HAPPINESS = 0.8
 OCCUPANCY = 0.7
 
@@ -37,10 +38,11 @@ class Cell(pygame.Rect):
     def setColor(self):
         if self.occupied == 0:
             self.color = WHITE
-        elif self.society_group == 0:
-            self.color = RED
-        else:
-            self.color = BLUE
+        if self.occupied == 1:
+            if self.society_group == 0:
+                self.color = RED
+            else:
+                self.color = BLUE
 
     def setHappiness(self):
         self.happiness = 0
@@ -51,7 +53,8 @@ class Cell(pygame.Rect):
 
 
 def createInitialMap(cell_map):
-    count = 0
+    count1 = 0
+    count2 = 0
     for i in range(0, ROW_MAX):
         column_list = []
         for j in range(0, COLUMN_MAX):
@@ -61,9 +64,17 @@ def createInitialMap(cell_map):
             else:
                 occupied = 0
             society_group = random.randrange(0,2)
-            new_cell = Cell(LEFT + i * WIDTH, TOP + j * HEIGHT, WIDTH, HEIGHT, (i,j), society_group, occupied, count)
+            if occupied == 1:
+                if society_group == 0:
+                    count1 += 1
+                    unique_id = 'R'+str(count1)
+                if society_group == 1:
+                    count2 += 1
+                    unique_id = 'B'+str(count2)
+            else:
+                unique_id = 'NO'
+            new_cell = Cell(LEFT + i * WIDTH, TOP + j * HEIGHT, WIDTH, HEIGHT, (i,j), society_group, occupied, unique_id)
             column_list.append(new_cell)
-            count+=1
         cell_map.append(column_list)
     updateHappinessAll(cell_map)
     calculateOverallHappiness(cell_map)
@@ -76,26 +87,30 @@ def updateHappinessAll(cell_map):
 
 
 def calculateHappinessForOneCell(one_cell, another_cell):
-    i = another_cell.position[0]
-    j = another_cell.position[1]
-    sum = 0
-    count = 0
-    for x in range(i - 1, i + 2):
-        if 0 <= x < ROW_MAX:
-            for y in range(j - 1, j + 2):
-                if 0 <= y < COLUMN_MAX:
-                    if x != i or y != j:
-                        if cell_map[x][y].occupied == 1:
-                            if cell_map[x][y].society_group == one_cell.society_group:
-                                sum += 1
-                        count += 1
-    sum = float(sum)
-    count = float(count)
-    if count != 0:
-        happiness = sum/count
+    if one_cell.occupied == 1:
+        i = another_cell.position[0]
+        j = another_cell.position[1]
+        sum = 0
+        count = 0
+        for x in range(i - 1, i + 2):
+            if 0 <= x < ROW_MAX:
+                for y in range(j - 1, j + 2):
+                    if 0 <= y < COLUMN_MAX:
+                        if x != i or y != j:
+                            if cell_map[x][y].occupied == 1:
+                                if cell_map[x][y].society_group == one_cell.society_group:
+                                    sum += 1
+                            count += 1
+        sum = float(sum)
+        count = float(count)
+        if count != 0:
+            happiness = sum/count
+        else:
+            happiness = 0
+        return happiness
     else:
         happiness = 0
-    return happiness
+        return happiness
 
 
 def calculateOverallHappiness(cell_map):
@@ -125,7 +140,14 @@ def findFirstAvailableCell(one_cell):
             another_cell = cell_map[m][n]
             if another_cell.occupied == 0:
                 potential_happiness = calculateHappinessForOneCell(one_cell,another_cell)
-                if potential_happiness > 0.25:
+                if potential_happiness >= MINIMUM_HAPPINESS:
+                    return another_cell
+    for m in range(0, ROW_MAX):
+        for n in range(0, COLUMN_MAX):
+            another_cell = cell_map[m][n]
+            if another_cell.occupied == 0:
+                potential_happiness = calculateHappinessForOneCell(one_cell, another_cell)
+                if potential_happiness >= one_cell.happiness:
                     return another_cell
     return one_cell
 
@@ -137,11 +159,13 @@ def migrateOneCell(one_cell, first_available_cell):
     i2 = first_available_cell.position[0]
     j2 = first_available_cell.position[1]
     tmp_id = first_available_cell.unique_id
+    tmp_sg = first_available_cell.society_group
     cell_map[i2][j2].society_group = one_cell.society_group
     cell_map[i2][j2].unique_id = one_cell.unique_id
     cell_map[i2][j2].occupied = 1
     cell_map[i2][j2].setColor()
     cell_map[i2][j2].happiness = calculateHappinessForOneCell(cell_map[i2][j2],cell_map[i2][j2])
+    cell_map[i1][j1].society_group = tmp_sg
     cell_map[i1][j1].unique_id = tmp_id
     cell_map[i1][j1].occupied = 0
     cell_map[i1][j1].setColor()
@@ -151,26 +175,28 @@ def migrateOneCell(one_cell, first_available_cell):
 pygame.init()
 pygame.time.set_timer(USEREVENT+1,100)
 windowSurface = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT),0,0)
-basicFont = pygame.font.SysFont(None, 15)
+basicFont = pygame.font.SysFont(None, 20)
 cell_map = []
 createInitialMap(cell_map)
 print calculateOverallHappiness(cell_map)
-windowSurface.fill(WHITE)
+windowSurface.fill(GREEN)
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
+        is_everyone_happy = True
         for i in range(0, ROW_MAX):
             for j in range(0, COLUMN_MAX):
                 one_cell = cell_map[i][j]
                 pygame.draw.rect(windowSurface,one_cell.color,one_cell,0)
-                #text = basicFont.render(str(one_cell.unique_id) + str(one_cell.happiness), True, BLACK)
-                #windowSurface.blit(text,one_cell)
+                if one_cell.happiness < MINIMUM_HAPPINESS:
+                    is_everyone_happy = False
+                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
+                windowSurface.blit(text,one_cell)
                 pygame.display.update()
-        current_happiness = calculateOverallHappiness(cell_map)
-        if current_happiness < OVERALL_HAPPINESS:
+        if is_everyone_happy == False:
             startMigration(cell_map)
-            print calculateOverallHappiness(cell_map)
-
+        else:
+            print 'All happy'
 
