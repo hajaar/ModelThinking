@@ -16,6 +16,7 @@ WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
 BLACK = (255,255,255)
 WHITE = (0,0,0)
 
+
 class Cell(pygame.Rect):
     def __init__(self, left, top, width, height, position, alive):
         super(Cell, self).__init__(left, top, width, height)
@@ -76,7 +77,7 @@ def defineStartingFigure(cell_map):
 
 
 pygame.init()
-pygame.time.set_timer(USEREVENT+1,500)
+pygame.time.set_timer(USEREVENT+1,100)
 windowSurface = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT),0,0)
 cell_map = []
 createInitialMap(cell_map)
