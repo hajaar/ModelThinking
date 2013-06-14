@@ -16,7 +16,7 @@ WIDTH = 5
 HEIGHT = 5
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
-RULE_NO = 45
+RULE_NO = 43
 
 
 def generateCellRule():
@@ -91,26 +91,25 @@ generateCellRule()
 cell_list = []
 cell_rows = []
 cell_rows.append(createInitialRow(cell_list))
-[cell_rows.append(generateNewCells(cell_rows[tick-1],tick)) for tick in range(1,WINDOW_HEIGHT//HEIGHT)]
-
-
-for tmp_list in cell_rows:
-    printList('listing cell rows', tmp_list)
-
+pygame.time.set_timer(USEREVENT+1,100)
+tick = 1
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-    windowSurface.fill((0,0,255))
-    for one_row in cell_rows:
-        for one_cell in one_row:
-            if one_cell.alive == 0:
-                color = (255,255,255)
-            else:
-                color = (0,0,0)
-            pygame.draw.rect(windowSurface,color,one_cell,0)
-    pygame.display.update()
+
+        if event.type == USEREVENT + 1:
+            one_row = generateNewCells(cell_rows[tick-1],tick)
+            for one_cell in one_row:
+                if one_cell.alive == 0:
+                    color = (0,0,255)
+                else:
+                    color = (255,0,0)
+                pygame.draw.rect(windowSurface,color,one_cell,0)
+            cell_rows.append(one_row)
+            tick += 1
+            pygame.display.update()
 
 
 
