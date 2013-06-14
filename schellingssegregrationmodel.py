@@ -8,10 +8,10 @@ import random
 
 LEFT = 0
 TOP = 0
-WIDTH = 50
-HEIGHT = 50
-ROW_MAX = 10
-COLUMN_MAX = 10
+WIDTH = 5
+HEIGHT = 5
+ROW_MAX = 50
+COLUMN_MAX = 50
 WINDOW_WIDTH = ROW_MAX*WIDTH
 WINDOW_HEIGHT = COLUMN_MAX*HEIGHT
 WHITE = (255,255,255)
@@ -59,10 +59,9 @@ def createInitialMap(cell_map):
         column_list = []
         for j in range(0, COLUMN_MAX):
             rate = random.randrange(1,11)
+            occupied = 0
             if 1<=rate<=OCCUPANCY*10:
                 occupied = 1
-            else:
-                occupied = 0
             society_group = random.randrange(0,2)
             if occupied == 1:
                 if society_group == 0:
@@ -78,6 +77,7 @@ def createInitialMap(cell_map):
         cell_map.append(column_list)
     updateHappinessAll(cell_map)
     calculateOverallHappiness(cell_map)
+
 
 
 def updateHappinessAll(cell_map):
@@ -101,10 +101,8 @@ def calculateHappinessForOneCell(one_cell, another_cell):
                                 if cell_map[x][y].society_group == one_cell.society_group:
                                     sum += 1
                             count += 1
-        sum = float(sum)
-        count = float(count)
         if count != 0:
-            happiness = sum/count
+            happiness = sum/float(count)
         else:
             happiness = 0
         return happiness
@@ -118,7 +116,6 @@ def calculateOverallHappiness(cell_map):
     count = 0
     for i in range(0, ROW_MAX):
         for j in range(0, COLUMN_MAX):
-            if cell_map[i][j].occupied == 1:
                 sum += cell_map[i][j].happiness
                 count += 1
     return sum/float(count)
@@ -147,7 +144,7 @@ def findFirstAvailableCell(one_cell):
             another_cell = cell_map[m][n]
             if another_cell.occupied == 0:
                 potential_happiness = calculateHappinessForOneCell(one_cell, another_cell)
-                if potential_happiness >= one_cell.happiness:
+                if potential_happiness > one_cell.happiness:
                     return another_cell
     return one_cell
 
@@ -180,23 +177,25 @@ cell_map = []
 createInitialMap(cell_map)
 print calculateOverallHappiness(cell_map)
 windowSurface.fill(GREEN)
+iteration = 0
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
         is_everyone_happy = True
-        for i in range(0, ROW_MAX):
-            for j in range(0, COLUMN_MAX):
-                one_cell = cell_map[i][j]
+        for one_row in cell_map:
+            for one_cell in one_row:
                 pygame.draw.rect(windowSurface,one_cell.color,one_cell,0)
                 if one_cell.happiness < MINIMUM_HAPPINESS:
                     is_everyone_happy = False
-                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
-                windowSurface.blit(text,one_cell)
-                pygame.display.update()
+                #text = basicFont.render(str(one_cell.unique_id), True, BLACK)
+                #windowSurface.blit(text,one_cell)
+        pygame.display.update()
         if is_everyone_happy == False:
             startMigration(cell_map)
         else:
             print 'All happy'
+        print iteration
+        iteration += 1
 
