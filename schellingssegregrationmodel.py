@@ -151,7 +151,8 @@ def createInitialMap(cell_map):
                     count2 += 1
                     unique_id = 'B'+str(count2)
                 if society_group == 2:
-                    count4 == 'Y'+str(count4)
+                    count4 += 1
+                    unique_id = 'Y'+str(count4)
                 occupied_cells.add((i,j))
             else:
                 unoccupied_cells.add((i,j))
@@ -194,24 +195,34 @@ def countByType():
                     sum_blue += 1
     print sum_unoccupied, sum_red, sum_blue
 
+def display_stuff(iteration,cell_movement,happiness_percentile_new, game_time):
+    display_msg = ' Full Pass: ' + str(iteration) + ' Cell Movement: ' + str(
+    cell_movement) + ' Happy % : ' + str(round(happiness_percentile_new,2)) + ' Run Time ' + str(game_time)
+    text = basicFont.render(display_msg, True, BLACK, WHITE)
+    informationSurface.blit(windowSurface, (0, 0))
+    informationSurface.blit(text, (0, WINDOW_HEIGHT + 10))
+    pygame.display.update()
+
 pygame.init()
+game_time = pygame.time.get_ticks()
 pygame.time.set_timer(USEREVENT+1,100)
 windowSurface = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT),0,0)
+informationSurface = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT+100),0,0)
 basicFont = pygame.font.SysFont(None, 20)
 cell_map = []
 unoccupied_cells = set([])
 occupied_cells = set([])
 createInitialMap(cell_map)
 windowSurface.fill(BLACK)
-happiness_percentile = calculateOverallHappiness(cell_map)
-happiness_percentile_new = happiness_percentile + 1
-iteration = 0
+informationSurface.fill(WHITE)
 for one_row in cell_map:
     for one_cell in one_row:
         pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
-#        text = basicFont.render(str(one_cell.unique_id), True, BLACK)
-#        windowSurface.blit(text, one_cell)
-pygame.display.update()
+cell_movement = 0
+iteration = 0
+happiness_percentile = 0
+happiness_percentile_new = calculateOverallHappiness(cell_map)
+display_stuff(iteration,cell_movement,happiness_percentile_new, round((pygame.time.get_ticks()-game_time)/1000,2))
 countByType()
 while True:
     for event in pygame.event.get():
@@ -222,25 +233,21 @@ while True:
             happiness_percentile = calculateOverallHappiness(cell_map)
             for cell_pos in occupied_cells:
                 one_cell = cell_map[cell_pos[0]][cell_pos[1]]
-    #            print 'Looking at cell ', str(one_cell)
                 if one_cell.happiness < MINIMUM_HAPPINESS:
                     another_cell_pos = one_cell.lookForNewLocation()
                     pygame.draw.rect(windowSurface, GREEN, one_cell, 0)
-    #                text = basicFont.render(str(one_cell.unique_id), True, BLACK)
-    #                windowSurface.blit(text, one_cell)
                     if another_cell_pos != None:
                         another_cell = cell_map[another_cell_pos[0]][another_cell_pos[1]]
                         pygame.draw.rect(windowSurface, GREEN, another_cell, 0)
-    #                    text = basicFont.render(str(another_cell.unique_id), True, BLACK)
-    #                    windowSurface.blit(text, another_cell)
                         pygame.display.update()
                         pygame.time.delay(100)
                         pygame.draw.rect(windowSurface, another_cell.color, another_cell, 0)
+                        cell_movement += 1
                     pygame.draw.rect(windowSurface, one_cell.color, one_cell, 0)
+                    display_stuff(iteration, cell_movement, happiness_percentile_new,round((pygame.time.get_ticks()-game_time)/1000,2))
                     pygame.display.update()
     #        countByType()
-            happiness_percentile_new = calculateOverallHappiness(cell_map)
-            print ' iteration ', iteration, '% happy ', calculateOverallHappiness(cell_map)
             iteration += 1
-
+            happiness_percentile_new = calculateOverallHappiness(cell_map)
+            display_stuff(iteration, cell_movement,happiness_percentile_new,round((pygame.time.get_ticks()-game_time)/1000,2))
 
