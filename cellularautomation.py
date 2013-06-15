@@ -12,11 +12,11 @@ cell_rule = {}
 LENGTH = 100
 LEFT = 20
 TOP = 20
-WIDTH = 5
-HEIGHT = 5
+WIDTH = 2
+HEIGHT = 2
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
-RULE_NO = 43
+RULE_NO = 45
 
 
 def generateCellRule():
