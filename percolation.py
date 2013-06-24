@@ -101,10 +101,9 @@ class Forest():
     def startBurningTheForest(self):
         for one_cell in self.ListofCells[0]:
             one_cell.startBurning(random.randrange(0,2))
-            if one_cell.burnt == 1:
-                self.continueBurningtheForest((one_cell.position[0],one_cell.position[1]))
+        self.continueBurningtheForest()
 
-    def continueBurningtheForest(self, cell_pos):
+    def continueBurningtheForest(self):
         for one_row in self.ListofCells:
             for one_cell in one_row:
                 if one_cell.burnt == 1:
