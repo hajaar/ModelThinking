@@ -16,7 +16,7 @@ WIDTH = 2
 HEIGHT = 2
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
-RULE_NO = 45
+RULE_NO = 46
 
 
 def generateCellRule():
